@@ -19,7 +19,9 @@ function ensureDependencies() {
   if (!fs.existsSync(NODE_MODULES_DIR)) {
     console.error('[choicelyextension] Installing dependencies for MCP server...');
     try {
-      execSync('npm install', {
+      // Install only production dependencies since we ship the 'dist' folder.
+      // Users don't need TypeScript or build tools.
+      execSync('npm install --omit=dev', {
         cwd: MCP_LOCAL_DIR,
         stdio: 'inherit'
       });

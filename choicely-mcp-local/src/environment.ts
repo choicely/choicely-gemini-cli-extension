@@ -1,8 +1,14 @@
 import os from 'os';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import { JAVA_HOME_TIMEOUT_SEC } from './constants.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const PACKAGE_ROOT = path.resolve(__dirname, '..');
+const TOOLS_DIR = path.join(PACKAGE_ROOT, 'tools');
 
 /**
  * Build the environment object for Android build/adb commands.
@@ -47,6 +53,25 @@ export function getPathKey(env: NodeJS.ProcessEnv = process.env): string {
 }
 
 function resolveJavaHome(platform: NodeJS.Platform): string | null {
+  // 0. Check for bundled/local JDK first
+  const bundledJdk = path.join(TOOLS_DIR, 'jdk');
+  // macOS .tar.gz usually extracts to jdk-<ver>.jdk/Contents/Home, but our installer logic
+  // renames the extracted folder to 'jdk'.
+  // However, on macOS, the internal structure of the tar.gz usually includes Contents/Home
+  // We need to check if 'Contents/Home' exists inside our 'jdk' folder.
+  
+  if (fs.existsSync(bundledJdk)) {
+    if (platform === 'darwin') {
+       const macHome = path.join(bundledJdk, 'Contents', 'Home');
+       if (fs.existsSync(macHome)) return macHome;
+    }
+    // For Linux/Windows, or if mac structure is flat (unlikely for official builds but possible)
+    // we return the bundledJdk root if bin/java exists
+    if (fs.existsSync(path.join(bundledJdk, 'bin'))) {
+        return bundledJdk;
+    }
+  }
+
   // 1. Check existing JAVA_HOME
   const existingJavaHome = normalizeExistingDir(process.env['JAVA_HOME']);
 
@@ -228,6 +253,16 @@ function javaHomeFromPath(): string | null {
 }
 
 function resolveAndroidHome(platform: NodeJS.Platform): string | null {
+  // 0. Check for bundled/local Android SDK first
+  const bundledSdk = path.join(TOOLS_DIR, 'android-sdk');
+  // We check for cmdline-tools or platform-tools to verify it's valid
+  if (fs.existsSync(bundledSdk) && (
+      fs.existsSync(path.join(bundledSdk, 'cmdline-tools')) || 
+      fs.existsSync(path.join(bundledSdk, 'platform-tools'))
+  )) {
+      return bundledSdk;
+  }
+
   const envHome = normalizeExistingDir(process.env['ANDROID_HOME'] || process.env['ANDROID_SDK_ROOT']);
   if (envHome) return envHome;
 

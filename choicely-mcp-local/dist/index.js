@@ -30,6 +30,7 @@ import { buildAppSimulator as iosBuildSimulator } from './ios/build.js';
 import { setIOSAppKey } from './ios/index.js';
 // Git imports
 import { fetchExampleAppRepository } from './git.js';
+import { installLocalDependencies } from './setup/installer.js';
 // Schema imports
 import { FetchRepoInputSchema, ConfigureAppKeyInputSchema, BuildAppInputSchema, InstallAppInputSchema, LaunchAppInputSchema, StartEmulatorInputSchema, AndroidDeviceActionInputSchema, IOSDeviceActionInputSchema, IOSBuildInputSchema, IOSInstallInputSchema, IOSLaunchInputSchema, } from './schemas.js';
 const IS_MACOS = process.platform === 'darwin';
@@ -196,6 +197,19 @@ server.tool('configure_app_key', 'Configure the Choicely app key in the demo app
 // ============================================================================
 // Android Tools
 // ============================================================================
+server.tool('install_android_dependencies', 'Download and install local Java JDK and Android Command Line Tools if missing.', {}, async () => {
+    await logInfo('Starting local dependency installation...');
+    try {
+        await installLocalDependencies();
+        await logInfo({ event: 'dependency_installation_complete' });
+        return {
+            content: [{ type: 'text', text: 'Dependencies installed successfully. Environment will now prioritize these local tools.' }],
+        };
+    }
+    catch (error) {
+        throw toolError(`Installation failed: ${error.message}`);
+    }
+});
 server.tool('build_android_example_app', 'Build the Android demo app (debug).', BuildAppInputSchema.shape, async ({ repo_path }) => {
     await logInfo({ event: 'build_start', repo_path });
     try {

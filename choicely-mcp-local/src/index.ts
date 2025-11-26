@@ -66,6 +66,7 @@ import { setIOSAppKey } from './ios/index.js';
 
 // Git imports
 import { fetchExampleAppRepository } from './git.js';
+import { installLocalDependencies } from './setup/installer.js';
 
 // Schema imports
 import {
@@ -275,6 +276,24 @@ server.tool(
 // ============================================================================
 // Android Tools
 // ============================================================================
+
+server.tool(
+  'install_android_dependencies',
+  'Download and install local Java JDK and Android Command Line Tools if missing.',
+  {},
+  async () => {
+    await logInfo('Starting local dependency installation...');
+    try {
+      await installLocalDependencies();
+      await logInfo({ event: 'dependency_installation_complete' });
+      return {
+        content: [{ type: 'text' as const, text: 'Dependencies installed successfully. Environment will now prioritize these local tools.' }],
+      };
+    } catch (error: any) {
+      throw toolError(`Installation failed: ${error.message}`);
+    }
+  }
+);
 
 server.tool(
   'build_android_example_app',

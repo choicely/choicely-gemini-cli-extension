@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@types/adm-zip": "^0.5.7",
+    "@types/tar": "^6.1.13",
+    "adm-zip": "^0.5.16",
+    "tar": "^7.5.2"
+  }
+}
