@@ -1,0 +1,1 @@
+{"version":3,"file":"emulator.d.ts","sourceRoot":"","sources":["../../src/android/emulator.ts"],"names":[],"mappings":"AAYA,OAAO,EAAE,oBAAoB,EAAE,aAAa,EAAE,MAAM,eAAe,CAAC;AAoDpE,wBAAsB,iBAAiB,IAAI,OAAO,CAAC,aAAa,CAAC,CAShE;AAqBD,wBAAsB,aAAa,CAC/B,OAAO,CAAC,EAAE,MAAM,GAAG,IAAI,EACvB,QAAQ,UAAQ,EAChB,QAAQ,UAAQ,EAChB,cAAc,SAA4B,GAC3C,OAAO,CAAC,oBAAoB,CAAC,CA0E/B"}
