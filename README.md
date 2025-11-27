@@ -41,6 +41,7 @@ The MCP server provides a comprehensive set of tools. Key tool categories includ
   - `build_android_example_app` / `build_ios_example_app`: Build the Android debug APK or the iOS simulator app bundle
   - `install_android_example_app` / `install_ios_app`: Install the Android APK or iOS app to the selected device/simulator
   - `launch_android_example_app` / `launch_ios_app`: Launch the platform-specific demo app on the target
+  - `install_android_dependencies`: Download and setup local Java JDK and Android SDK if missing from the system.
 - Documentation
   - `SearchChoicelyMobileSdk`: Search across the Choicely Mobile SDK knowledge base for guides, API references, and code examples.
 - Emulator and device helpers
@@ -56,6 +57,7 @@ The MCP server provides a comprehensive set of tools. Key tool categories includ
 | `fetch_example_app_repository` | Clone the demo repo | Set `overwrite=true` only if you want to delete an existing clone |
 | `configure_app_key` | Set the Choicely App Key | Updates the project files with the provided key |
 | `build_android_example_app` / `build_ios_example_app` | Build Android APK / iOS simulator app | Uses Gradle / xcodebuild respectively |
+| `install_android_dependencies` | Install local Java/Android SDK | Downloads JDK 21 and Android tools to `tools/` if missing |
 | `install_android_example_app` / `install_ios_app` | Install builds onto targets | Accepts optional device IDs; iOS auto-detects simulator vs device |
 | `launch_android_example_app` / `launch_ios_app` | Launch the demo app | Selects first target if none provided |
 | `SearchChoicelyMobileSdk` | Search SDK documentation | specific queries for API usage and guides |

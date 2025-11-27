@@ -56,7 +56,7 @@ async function downloadFile(url, dest) {
         });
     });
 }
-export async function installLocalDependencies(log = console.log) {
+export async function installLocalDependencies(log = console.log, options = {}) {
     if (!fs.existsSync(TOOLS_DIR)) {
         fs.mkdirSync(TOOLS_DIR, { recursive: true });
     }
@@ -191,11 +191,13 @@ export async function installLocalDependencies(log = console.log) {
                 // This prevents Gradle from trying (and failing) to do it later
                 const requiredPackages = [
                     "platform-tools",
-                    // "emulator", // Skipped to reduce download size (~400MB). Add back if local emulator hosting is required.
                     "build-tools;34.0.0", // CRITICAL: Matches typical compileSdkVersion 34
                     "platforms;android-34", // CRITICAL: The actual platform SDK
                     "extras;google;google_play_services"
                 ];
+                if (options.installEmulator) {
+                    requiredPackages.push("emulator");
+                }
                 log('Installing required Android packages...');
                 await runSdkManager(requiredPackages);
             }

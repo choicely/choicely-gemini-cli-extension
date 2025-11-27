@@ -5,10 +5,11 @@ This extension gives the Gemini host a toolbox for running the Choicely Android 
 ## Tool Surface (Quick Reference)
 - Core pipeline: `fetch_example_app_repository`, `configure_app_key`, `build_android_example_app`, `install_android_example_app`, `launch_android_example_app`
 - Documentation: `SearchChoicelyMobileSdk` - Search the Choicely Mobile SDK knowledge base.
-- Device & emulator helpers: `list_android_connected_devices`, `list_android_available_avds`, `start_android_emulator`, `android_device_action` (info/logs/screenshot/force_stop/uninstall)
+- Device & emulator helpers: `list_android_connected_devices`, `list_android_available_avds`, `start_android_emulator`, `android_device_action` (info/logs/screenshot/force_stop/uninstall), `install_android_dependencies`
 - iOS Tools: `build_ios_example_app`, `list_ios_targets`, `boot_ios_simulator`, `install_ios_app`, `launch_ios_app`, `ios_device_action`
 - App identifiers: Android package `com.choicely.sdk.demo`; iOS bundle `com.choicely.sdk.demo` (or similar).
 - Auth context: `CHOICELY_APP_KEY`. This key links the demo app to a specific Choicely app configuration. It can be provided via environment variable or the `configure_app_key` tool. If not set, the app uses a default demo key.
+- Dependencies: The extension can automatically download and configure a local Java JDK and Android SDK if they are missing from the system. Use `install_android_dependencies` for this.
 
 ## Preferred Workflows
 
@@ -32,6 +33,8 @@ This extension gives the Gemini host a toolbox for running the Choicely Android 
 4. Ask whether to launch (`launch_android_example_app`) the demo.
 
 ### iOS workflow (macOS hosts)
+**IMPORTANT**: The iOS workflow is ONLY available on macOS hosts. If you are running on Windows or Linux, you cannot build, install, or launch iOS apps. Do NOT offer iOS tools or attempt to run them on non-macOS platforms.
+
 1. When on macOS and the user wants iOS, build with `build_ios_example_app`.
 2. Use `list_ios_targets` or `boot_ios_simulator` to ensure a simulator/device is available.
 3. Offer to install via `install_ios_app`.
@@ -161,7 +164,20 @@ Usage (agent):
 - Screenshots are saved under `~/ChoicelyArtifacts` (or `CHOICELY_ARTIFACTS_DIR` if set) so the result path is easy to share with the user.
 - Use `action='info'` to confirm model/version before installing, `action='logs'`/`'screenshot'` for troubleshooting, and `action='force_stop'`/`'uninstall'` before reinstalling. Only `info`/`logs` may run automatically for discovery.
 
-### 10. `SearchChoicelyMobileSdk`
+### 10. `install_android_dependencies`
+**Purpose**: Downloads and sets up a local Java JDK (21) and Android Command-line Tools within the extension directory.
+
+**Parameters**:
+- `install_emulator` (boolean, optional, default: false): If true, also downloads the Android Emulator (~500MB).
+
+**Returns**: Status message.
+
+Usage (agent):
+- Run this if `build_android_example_app` fails with "Java version mismatch", "Android SDK not found", or "JAVA_HOME not set".
+- It self-repairs the environment so subsequent builds succeed.
+- Only set `install_emulator=true` if the user explicitly asks for a new emulator setup or if no device is available and you plan to use `start_android_emulator`.
+
+### 11. `SearchChoicelyMobileSdk`
 **Purpose**: Search the Choicely Mobile SDK documentation.
 
 **Parameters**:
@@ -207,8 +223,9 @@ Conversation flow and decision rules for the agent (must-follow):
 
 ## Troubleshooting
 
-- Build failures: Ensure Java (JAVA_HOME) and Android SDK (ANDROID_HOME) are set; Gradle can run. Timeouts are enforced.
-- Install failures: Verify a device is connected (`adb devices`) and USB debugging enabled.
+- **Missing SDKs**: If build fails due to missing Java or Android SDK, run `install_android_dependencies` to download a local copy.
+- **Build failures**: Ensure Java (JAVA_HOME) and Android SDK (ANDROID_HOME) are set; Gradle can run. Timeouts are enforced.
+- **Install failures**: Verify a device is connected (`adb devices`) and USB debugging enabled.
 - Emulator won't appear: Ensure the Android Emulator is installed (SDK Manager) and your `ANDROID_HOME` includes the `emulator/` directory on PATH.
 - App key issues: Confirm `CHOICELY_APP_KEY` is configured. Check the source files in `Android/Java/app/src/main/res/values/strings.xml` (or similar) if unsure.
 

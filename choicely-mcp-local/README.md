@@ -17,9 +17,9 @@ npx @choicely/mcp-local
 ## Requirements
 
 ### Android Development
-- **Java JDK 11+** (Java 17+ recommended) - Set `JAVA_HOME` environment variable
-- **Android SDK** - Set `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable
-- **ADB** - Part of Android SDK Platform Tools (should be on PATH)
+- **Java JDK 21+** - Set `JAVA_HOME` environment variable, OR run `install_android_dependencies` to download a local copy.
+- **Android SDK** - Set `ANDROID_HOME` or `ANDROID_SDK_ROOT` environment variable, OR run `install_android_dependencies` to download a local copy.
+- **ADB** - Part of Android SDK Platform Tools (should be on PATH or provided by local install)
 
 ### iOS Development (macOS only)
 - **Xcode** - With command line tools installed
@@ -94,6 +94,7 @@ The recommended approach is to have the agent call `configure_app_key` with the 
 ### Android Tools
 | Tool | Purpose | Notes |
 | --- | --- | --- |
+| `install_android_dependencies` | Install local Java/Android SDK | Downloads JDK 21 and Android tools if missing from system |
 | `build_android_example_app` | Build the Android demo app (debug APK) | Uses Gradle |
 | `install_android_example_app` | Install APK to connected device | Accepts optional `device_id` |
 | `launch_android_example_app` | Launch the installed app | Selects first target if none provided |

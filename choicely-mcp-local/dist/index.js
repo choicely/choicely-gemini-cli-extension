@@ -197,11 +197,13 @@ server.tool('configure_app_key', 'Configure the Choicely app key in the demo app
 // ============================================================================
 // Android Tools
 // ============================================================================
-server.tool('install_android_dependencies', 'Download and install local Java JDK and Android Command Line Tools if missing.', {}, async () => {
+server.tool('install_android_dependencies', 'Download and install local Java JDK and Android Command Line Tools if missing.', {
+    install_emulator: z.boolean().optional().describe('Whether to also download and install the Android Emulator (~500MB). Defaults to false.'),
+}, async ({ install_emulator }) => {
     await logInfo('Starting local dependency installation...');
     try {
         // Pass the logger to report progress
-        await installLocalDependencies((msg) => logInfo(msg));
+        await installLocalDependencies((msg) => logInfo(msg), { installEmulator: install_emulator });
         await logInfo({ event: 'dependency_installation_complete' });
         return {
             content: [{ type: 'text', text: 'Dependencies installed successfully. Environment will now prioritize these local tools.' }],

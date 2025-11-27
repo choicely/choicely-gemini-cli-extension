@@ -66,7 +66,12 @@ async function downloadFile(url: string, dest: string): Promise<void> {
 // Logger interface compatible with console.log and our MCP logInfo
 type Logger = (message: string) => void;
 
-export async function installLocalDependencies(log: Logger = console.log) {
+// Options interface
+export interface InstallOptions {
+  installEmulator?: boolean;
+}
+
+export async function installLocalDependencies(log: Logger = console.log, options: InstallOptions = {}) {
   if (!fs.existsSync(TOOLS_DIR)) {
     fs.mkdirSync(TOOLS_DIR, { recursive: true });
   }
@@ -216,11 +221,14 @@ export async function installLocalDependencies(log: Logger = console.log) {
         // This prevents Gradle from trying (and failing) to do it later
         const requiredPackages = [
           "platform-tools",
-          // "emulator", // Skipped to reduce download size (~400MB). Add back if local emulator hosting is required.
           "build-tools;34.0.0",      // CRITICAL: Matches typical compileSdkVersion 34
           "platforms;android-34",    // CRITICAL: The actual platform SDK
           "extras;google;google_play_services"
         ];
+        
+        if (options.installEmulator) {
+           requiredPackages.push("emulator");
+        }
         
         log('Installing required Android packages...');
         await runSdkManager(requiredPackages);
