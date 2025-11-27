@@ -200,7 +200,8 @@ server.tool('configure_app_key', 'Configure the Choicely app key in the demo app
 server.tool('install_android_dependencies', 'Download and install local Java JDK and Android Command Line Tools if missing.', {}, async () => {
     await logInfo('Starting local dependency installation...');
     try {
-        await installLocalDependencies();
+        // Pass the logger to report progress
+        await installLocalDependencies((msg) => logInfo(msg));
         await logInfo({ event: 'dependency_installation_complete' });
         return {
             content: [{ type: 'text', text: 'Dependencies installed successfully. Environment will now prioritize these local tools.' }],

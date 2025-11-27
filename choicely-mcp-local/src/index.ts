@@ -284,7 +284,9 @@ server.tool(
   async () => {
     await logInfo('Starting local dependency installation...');
     try {
-      await installLocalDependencies();
+      // Pass the logger to report progress
+      await installLocalDependencies((msg) => logInfo(msg));
+      
       await logInfo({ event: 'dependency_installation_complete' });
       return {
         content: [{ type: 'text' as const, text: 'Dependencies installed successfully. Environment will now prioritize these local tools.' }],

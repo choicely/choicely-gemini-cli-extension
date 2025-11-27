@@ -4,7 +4,7 @@ import https from 'https';
 import { fileURLToPath } from 'url';
 import AdmZip from 'adm-zip';
 import * as tar from 'tar';
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -32,25 +32,41 @@ const ANDROID_CMDLINE_URLS = {
 
 async function downloadFile(url: string, dest: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const file = fs.createWriteStream(dest);
     https.get(url, (response) => {
+      // Handle Redirects
+      if (response.statusCode === 301 || response.statusCode === 302) {
+        if (response.headers.location) {
+          downloadFile(response.headers.location, dest)
+            .then(resolve)
+            .catch(reject);
+          return;
+        }
+      }
+
       if (response.statusCode !== 200) {
         reject(new Error(`Failed to download ${url}: ${response.statusCode}`));
         return;
       }
+
+      const file = fs.createWriteStream(dest);
       response.pipe(file);
       file.on('finish', () => {
         file.close();
         resolve();
       });
     }).on('error', (err) => {
-      fs.unlink(dest, () => {});
+      if (fs.existsSync(dest)) {
+        fs.unlink(dest, () => {});
+      }
       reject(err);
     });
   });
 }
 
-export async function installLocalDependencies() {
+// Logger interface compatible with console.log and our MCP logInfo
+type Logger = (message: string) => void;
+
+export async function installLocalDependencies(log: Logger = console.log) {
   if (!fs.existsSync(TOOLS_DIR)) {
     fs.mkdirSync(TOOLS_DIR, { recursive: true });
   }
@@ -65,13 +81,13 @@ export async function installLocalDependencies() {
   if (jdkUrl) {
     const jdkDir = path.join(TOOLS_DIR, 'jdk');
     if (!fs.existsSync(jdkDir)) {
-      console.log(`Downloading JDK from ${jdkUrl}...`);
+      log(`Downloading JDK from ${jdkUrl}...`);
       const ext = jdkUrl.endsWith('.zip') ? '.zip' : '.tar.gz';
       const archivePath = path.join(TOOLS_DIR, `jdk${ext}`);
       
       await downloadFile(jdkUrl, archivePath);
       
-      console.log('Extracting JDK...');
+      log('Extracting JDK...');
       if (ext === '.zip') {
         const zip = new AdmZip(archivePath);
         zip.extractAllTo(TOOLS_DIR, true);
@@ -95,12 +111,12 @@ export async function installLocalDependencies() {
         }
       }
       fs.unlinkSync(archivePath);
-      console.log('JDK installed locally.');
+      log('JDK installed locally.');
     } else {
-      console.log('Local JDK already exists.');
+      log('Local JDK already exists.');
     }
   } else {
-    console.warn(`No JDK URL found for ${platform}-${arch}`);
+    log(`No JDK URL found for ${platform}-${arch}`);
   }
 
   // 2. Install Android Command Line Tools
@@ -108,11 +124,11 @@ export async function installLocalDependencies() {
   if (cmdUrl) {
     const sdkDir = path.join(TOOLS_DIR, 'android-sdk');
     if (!fs.existsSync(sdkDir)) {
-      console.log(`Downloading Android Command Line Tools from ${cmdUrl}...`);
+      log(`Downloading Android Command Line Tools from ${cmdUrl}...`);
       const archivePath = path.join(TOOLS_DIR, 'cmdline-tools.zip');
       await downloadFile(cmdUrl, archivePath);
 
-      console.log('Extracting Android Tools...');
+      log('Extracting Android Tools...');
       // Extract to android-sdk/cmdline-tools/latest
       // The zip contains 'cmdline-tools' folder usually, or just 'tools'
       const extractTemp = path.join(TOOLS_DIR, 'temp_android');
@@ -138,10 +154,10 @@ export async function installLocalDependencies() {
       fs.rmSync(extractTemp, { recursive: true, force: true });
       fs.unlinkSync(archivePath);
 
-      console.log('Android Tools installed locally.');
+      log('Android Tools installed locally.');
       
       // 3. Accept Licenses & Install Platform Tools
-      console.log('Installing platform-tools...');
+      log('Installing platform-tools...');
       const sdkManagerBin = path.join(cmdlineToolsDir, 'latest', 'bin', platform === 'win32' ? 'sdkmanager.bat' : 'sdkmanager');
       
       if (platform !== 'win32') {
@@ -156,24 +172,65 @@ export async function installLocalDependencies() {
        }
       
       try {
-        // Yes | sdkmanager --licenses
-        // sdkmanager "platform-tools" "platforms;android-34"
         const env = { ...process.env, JAVA_HOME: javaHome, ANDROID_HOME: sdkDir };
+
+        // Helper to run sdkmanager and pipe 'y' to it continuously
+        const runSdkManager = (args: string[]) => {
+            return new Promise<void>((resolve, reject) => {
+                const isWin = process.platform === 'win32';
+                const proc = spawn(sdkManagerBin, args, { 
+                    env, 
+                    stdio: ['pipe', 'inherit', 'inherit'],
+                    shell: isWin 
+                });
+
+                // continuously feed 'y' to stdin to accept any prompts
+                const timer = setInterval(() => {
+                    if (proc.stdin && !proc.stdin.destroyed) {
+                        try {
+                           proc.stdin.write('y\n');
+                        } catch {
+                           // ignore write errors
+                        }
+                    }
+                }, 500);
+
+                proc.on('close', (code) => {
+                    clearInterval(timer);
+                    if (code === 0) resolve();
+                    else reject(new Error(`sdkmanager failed with code ${code}`));
+                });
+                
+                proc.on('error', (err) => {
+                    clearInterval(timer);
+                    reject(err);
+                });
+            });
+        };
         
-        // Accept licenses
-        console.log('Accepting licenses...');
-        execSync(`yes | "${sdkManagerBin}" --licenses`, { env, stdio: 'ignore' });
+        // 1. Accept general licenses first
+        log('Accepting licenses...');
+        await runSdkManager(['--licenses']);
+
+        // 2. Explicitly install the required packages
+        // This prevents Gradle from trying (and failing) to do it later
+        const requiredPackages = [
+          "platform-tools",
+          // "emulator", // Skipped to reduce download size (~400MB). Add back if local emulator hosting is required.
+          "build-tools;34.0.0",      // CRITICAL: Matches typical compileSdkVersion 34
+          "platforms;android-34",    // CRITICAL: The actual platform SDK
+          "extras;google;google_play_services"
+        ];
         
-        // Install platform-tools
-        console.log('Installing platform-tools and emulator...');
-        execSync(`"${sdkManagerBin}" "platform-tools" "emulator"`, { env, stdio: 'inherit' });
+        log('Installing required Android packages...');
+        await runSdkManager(requiredPackages);
         
-      } catch (e) {
-        console.error('Failed to run sdkmanager:', e);
+      } catch (e: any) {
+        log(`Failed to run sdkmanager: ${e.message}`);
       }
 
     } else {
-      console.log('Local Android SDK already exists.');
+      log('Local Android SDK already exists.');
     }
   }
 }
