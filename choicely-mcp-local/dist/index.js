@@ -120,7 +120,7 @@ server.tool('fetch_example_app_repository', 'Fetch the Choicely example app repo
                         suggested_actions: [
                             'Run build_android_example_app to produce the debug APK',
                             'Install the Android build or, on macOS, run build_ios_example_app',
-                            'If you need a different app key, update CHOICELY_APP_KEY and clone again',
+                            'If you need a different app key, call configure_app_key to update the existing clone',
                         ],
                     }),
                 },

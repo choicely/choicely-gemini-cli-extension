@@ -1,23 +1,6 @@
 {
   "name": "ChoicelyExtension",
   "version": "1.0.0",
-  "settings": [
-    {
-      "name": "Choicely App Key",
-      "description": "The Choicely app key for the Choicely extension.",
-      "envVar": "CHOICELY_APP_KEY"
-    },
-    {
-      "name": "Java Home",
-      "description": "The path to the Java home directory.",
-      "envVar": "JAVA_HOME"
-    },
-    {
-      "name": "Android Home",
-      "description": "The path to the Android home directory.",
-      "envVar": "ANDROID_HOME"
-    }
-  ],
   "description": "A Gemini extension for interacting with the Choicely API.",
   "mcpServers": {
     "choicelyextension": {

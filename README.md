@@ -89,10 +89,16 @@ The MCP server provides a comprehensive set of tools. Key tool categories includ
 See `GEMINI.md` for full tool details, structured outputs, and recommended workflow.
 
 **Requirements**
-- Node.js 18+ (used to run the server)
-- Java JDK (set `JAVA_HOME` or ensure `/usr/libexec/java_home` works on macOS) - required for Android builds
-- Android SDK (set `ANDROID_HOME` or `ANDROID_SDK_ROOT`), with `adb` on `PATH` - required for Android builds
-- Optional: a connected device or emulator for install/launch operations
+- **Node.js 18+** & **npm**: Required to run the extension server.
+- **Git**: Required to clone the example app repository. (https://git-scm.com/install/)
+- **Java JDK**: Required for Android builds.
+  - Can be set via `JAVA_HOME`.
+  - If missing, the extension can download a local copy automatically.
+- **Android SDK**: Required for Android builds.
+  - Can be set via `ANDROID_HOME` or `ANDROID_SDK_ROOT`.
+  - If missing, the extension can download local command-line tools automatically.
+- **Xcode (macOS only)**: Required for iOS builds and simulators.
+- Optional: a connected device or emulator for install/launch operations.
 
 **Credential handling**
 - The main credential is `CHOICELY_APP_KEY`.

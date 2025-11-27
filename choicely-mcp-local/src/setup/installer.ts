@@ -11,10 +11,17 @@ const __dirname = path.dirname(__filename);
 const PACKAGE_ROOT = path.resolve(__dirname, '..', '..');
 const TOOLS_DIR = path.join(PACKAGE_ROOT, 'tools');
 
+// JDK download URLs (Java 21 LTS)
+// See: https://www.oracle.com/java/technologies/downloads/#java21
 const JDK_URLS = {
-  'linux-x64': 'https://download.oracle.com/java/25/latest/jdk-25_linux-x64_bin.tar.gz',
-  'darwin-arm64': 'https://download.oracle.com/java/25/latest/jdk-25_macos-aarch64_bin.tar.gz',
-  'win32-x64': 'https://download.oracle.com/java/25/latest/jdk-25_windows-x64_bin.zip',
+  'linux-x64': 'https://download.oracle.com/java/21/latest/jdk-21_linux-x64_bin.tar.gz',
+  'linux-arm64': 'https://download.oracle.com/java/21/latest/jdk-21_linux-aarch64_bin.tar.gz',
+  'darwin-arm64': 'https://download.oracle.com/java/21/latest/jdk-21_macos-aarch64_bin.tar.gz',
+  'darwin-x64': 'https://download.oracle.com/java/21/latest/jdk-21_macos-x64_bin.tar.gz',
+  'win32-x64': 'https://download.oracle.com/java/21/latest/jdk-21_windows-x64_bin.zip',
+  // Windows ARM64 uses Microsoft Build of OpenJDK 21
+  // Source: https://learn.microsoft.com/java/openjdk/download
+  'win32-arm64': 'https://aka.ms/download-jdk/microsoft-jdk-21-windows-aarch64.zip',
 };
 
 const ANDROID_CMDLINE_URLS = {
