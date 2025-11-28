@@ -1,7 +1,7 @@
 {
-  "name": "ChoicelyExtension",
+  "name": "choicely-native-mobile-app-assistant",
   "version": "1.0.0",
-  "description": "A Gemini extension for building Choicely mobile applications. Build a mobile applications in days not months. Create you account at https://www.choicely.com/",
+  "description": "A Gemini CLI extension for building Choicely native mobile applications. Build mobile applications in days not months! Create your account at https://www.choicely.com/, try our AI app builder demo, and get an App Key for your own app. Extension can also be used without an account with the provided demo app.",
   "mcpServers": {
     "choicelyextension": {
       "command": "node",
