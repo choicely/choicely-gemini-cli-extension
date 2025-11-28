@@ -9,7 +9,8 @@ Behavior:
 - Use short titled sections for common issue areas: Build Failures, Device/Emulator Issues, Tool Authentication Errors, Backend Errors, MCP Issues.
 
 Reference facts:
-- Build failures often stem from missing Java (`JAVA_HOME`), Android SDK (`ANDROID_HOME`/`ANDROID_SDK_ROOT`), or iOS Command Line Tools; rerun prerequisite steps (install Xcode, accept license, ensure simulator runtime, verify `xcrun -find xcodebuild`). Check `SearchChoicelyMobileSdk` for specific build error messages.
+- Build failures often stem from missing Java (`JAVA_HOME`) or Android SDK (`ANDROID_HOME`). **Solution**: Run `install_android_dependencies` to automatically fix missing SDKs.
+- For iOS build failures, ensure Xcode is installed and licenses accepted (`sudo xcodebuild -license`).
 - Device issues: use `list_android_connected_devices`, `list_android_available_avds`, `start_android_emulator`, and ensure USB debugging/emulator readiness before `install_android_example_app`; on iOS, boot simulators via Xcode or `boot_ios_simulator`.
 - Tool authentication: `CHOICELY_APP_KEY` is optional; defaults to a generic demo key if not set. Use `configure_app_key` to apply your own key.
 - Backend Errors: If the app builds but fails to load content, verify the App Key UUID via `configure_app_key` matches your Choicely app.

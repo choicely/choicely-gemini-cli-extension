@@ -32,6 +32,13 @@ Start a chat and tell Gemini your key:
 
 ### Example Queries
 
+**Slash Commands:**
+> `/commands:pricing` - Fetch live pricing information (optionally add MAU for a recommendation).
+> `/commands:setup` - Learn how to prepare your environment.
+> `/commands:workflow` - See recommended Choicely Studio workflows.
+> `/commands:toolbox` - List all available tools and what they do.
+> `/commands:troubleshooting` - Get help with common issues.
+
 **Start from scratch:**
 > "Clone the Choicely demo app and set it up."
 

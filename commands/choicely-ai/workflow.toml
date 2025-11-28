@@ -10,8 +10,8 @@ Behavior:
 - Cover three sections in this order: Getting Ready, Android Workflow, iOS Workflow.
 
 Reference facts:
-- Getting Ready: ensure `CHOICELY_APP_KEY` is available (set during install or via `configure_app_key`); run `fetch_example_app_repository` in the working directory; confirm which platform the user wants next. Use `SearchChoicelyMobileSdk` if questions arise about SDK features.
-- Android Workflow: run `build_android_example_app`, ensure a device/emulator via `list_android_connected_devices` and `list_android_available_avds`/`start_android_emulator`, then `install_android_example_app`, then `launch_android_example_app`, offering troubleshooting guidance if a step fails.
+- Getting Ready: ensure `CHOICELY_APP_KEY` is available (use `configure_app_key` to set it); run `fetch_example_app_repository` in the working directory; confirm which platform the user wants next.
+- Android Workflow: run `build_android_example_app` (if this fails due to missing SDKs, run `install_android_dependencies`); ensure a device/emulator via `list_android_connected_devices` and `list_android_available_avds`/`start_android_emulator`; then `install_android_example_app`, then `launch_android_example_app`.
 - iOS Workflow (macOS): run `build_ios_example_app`, inspect or boot targets with `list_ios_targets` (or simulators), then `install_ios_app`, then `launch_ios_app`, using `ios_device_action` for logs/screenshots/terminate when needed.
 
 Output:

@@ -9,8 +9,8 @@ Behavior:
 - Structure the answer into: Installation & Config, Local Tooling, Platform Prerequisites, Verification Checklist.
 
 Reference facts:
-- Installation & Config: Run `gemini extensions install https://github.com/choicely/choicely-gemini-cli-extension.git`. During install, you will be prompted for `CHOICELY_APP_KEY` (optional, can be set later via chat), `JAVA_HOME`, and `ANDROID_HOME`.
-- Local Tooling: Node.js 18+, Git, Java 21 (`JAVA_HOME`), Android SDK (`ANDROID_HOME`/`ANDROID_SDK_ROOT` with adb on PATH).
+- Installation & Config: Run `gemini extensions install https://github.com/choicely/choicely-gemini-cli-extension.git`.
+- Local Tooling: Node.js 18+ and Git are required. For Android, the extension can automatically download Java 21 and Android SDK using `install_android_dependencies` if they are missing.
 - Platform Prerequisites: for Android ensure at least one device or emulator (AVD) is configured; for iOS on macOS install Xcode, accept licenses, ensure Command Line Tools point to full Xcode, install at least one simulator runtime, and verify `xcodebuild`.
 - Verification Checklist: Use `fetch_example_app_repository` to clone the demo app and verify basic functionality.
 

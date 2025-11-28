@@ -11,9 +11,9 @@ Behavior:
 Reference facts:
 - Core Pipeline: `fetch_example_app_repository`, `configure_app_key`, `build_android_example_app`, `install_android_example_app`, `launch_android_example_app`, `build_ios_example_app`, `install_ios_app`, `launch_ios_app`.
 - Documentation: `SearchChoicelyMobileSdk` (search guides and API references).
-- Device & Emulator Helpers: `list_android_connected_devices`, `list_android_available_avds`, `start_android_emulator`, `android_device_action (info/logs/screenshot/force_stop/uninstall)`.
+- Device & Emulator Helpers: `list_android_connected_devices`, `list_android_available_avds`, `start_android_emulator`, `android_device_action (info/logs/screenshot/force_stop/uninstall)`, `install_android_dependencies` (downloads local JDK/SDK).
 - iOS Helpers: `list_ios_targets`, `boot_ios_simulator`, `ios_device_action (logs/terminate/uninstall/screenshot)`.
-- Diagnostics & Utilities: `CHOICELY_APP_KEY` is optional (defaults to demo key if skipped). Use `configure_app_key` to switch keys. The extension uses a bundled local server.
+- Diagnostics & Utilities: `CHOICELY_APP_KEY` is optional. Use `configure_app_key` to switch keys.
 
 Output:
 - For each category list the tools with one-sentence practical descriptions and mention notable parameters or defaults (e.g., auto-selecting first device).
