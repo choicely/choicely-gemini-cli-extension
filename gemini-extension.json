@@ -1,7 +1,7 @@
 {
   "name": "ChoicelyExtension",
   "version": "1.0.0",
-  "description": "A Gemini extension for interacting with the Choicely API.",
+  "description": "A Gemini extension for building Choicely mobile applications. Build a mobile applications in days not months. Create you account at https://www.choicely.com/",
   "mcpServers": {
     "choicelyextension": {
       "command": "node",
