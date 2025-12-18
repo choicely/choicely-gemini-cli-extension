@@ -12,35 +12,48 @@ import { IOS_BUILD_TIMEOUT_SEC } from '../constants.js';
  * Best-effort resolution of Xcode project and default scheme.
  */
 function resolveProjectAndScheme(repoPath) {
-    const iosDir = path.join(repoPath, 'iOS');
-    // Demo repo layout suggests sdk-ios-demo.xcodeproj
+    // Check standard RN path first or Native path
+    const iosDirRN = path.join(repoPath, 'ios');
+    const iosDirNative = path.join(repoPath, 'iOS');
+    let iosDir = fs.existsSync(iosDirRN) ? iosDirRN : iosDirNative;
+    // Demo repo layout suggests sdk-ios-demo.xcodeproj (Native)
     const proj = path.join(iosDir, 'sdk-ios-demo', 'sdk-ios-demo.xcodeproj');
     if (fs.existsSync(proj)) {
         return { project: proj, scheme: 'sdk-ios-demo' };
     }
-    // Fallback: search any .xcodeproj in iOS
-    const findXcodeproj = (dir) => {
+    // Fallback: search any .xcworkspace (preferred for RN/Pods) or .xcodeproj
+    const findXcodeContainer = (dir) => {
         if (!fs.existsSync(dir))
             return null;
         const entries = fs.readdirSync(dir, { withFileTypes: true });
+        // Prefer workspace if exists (CocoaPods)
+        for (const entry of entries) {
+            if (entry.isDirectory() && entry.name.endsWith('.xcworkspace')) {
+                return path.join(dir, entry.name);
+            }
+        }
+        // Fallback to project
         for (const entry of entries) {
             if (entry.isDirectory() && entry.name.endsWith('.xcodeproj')) {
                 return path.join(dir, entry.name);
             }
             if (entry.isDirectory()) {
-                const nested = findXcodeproj(path.join(dir, entry.name));
-                if (nested)
-                    return nested;
+                // simple shallow check to avoid deep traversal in node_modules
+                if (entry.name !== 'node_modules' && entry.name !== 'Pods') {
+                    const nested = findXcodeContainer(path.join(dir, entry.name));
+                    if (nested)
+                        return nested;
+                }
             }
         }
         return null;
     };
-    const foundProj = findXcodeproj(iosDir);
-    if (foundProj) {
-        const scheme = path.basename(foundProj, '.xcodeproj');
-        return { project: foundProj, scheme };
+    const foundContainer = findXcodeContainer(iosDir);
+    if (foundContainer) {
+        const scheme = path.basename(foundContainer, path.extname(foundContainer));
+        return { project: foundContainer, scheme };
     }
-    throw new Error(`No Xcode project found under ${iosDir}`);
+    throw new Error(`No Xcode project found under ${iosDir} or ${iosDirNative}`);
 }
 /**
  * Build the iOS demo app for iphonesimulator.
@@ -48,6 +61,28 @@ function resolveProjectAndScheme(repoPath) {
 export async function buildAppSimulator(repoPath, scheme, configuration = 'Debug', destinationName = 'iPhone 17 Pro') {
     if (!fs.existsSync(repoPath)) {
         throw new Error(`Repository not found: ${repoPath}`);
+    }
+    // Detect React Native
+    const packageJson = path.join(repoPath, 'package.json');
+    const isRN = fs.existsSync(packageJson);
+    if (isRN) {
+        console.error('Detected React Native project. Installing dependencies...');
+        try {
+            await execa('npm', ['install'], { cwd: repoPath, timeout: 300000 });
+            const iosDir = path.join(repoPath, 'ios');
+            if (fs.existsSync(iosDir)) {
+                console.error('Installing CocoaPods...');
+                await execa('pod', ['install'], { cwd: iosDir, timeout: 300000 });
+            }
+        }
+        catch (e) {
+            return {
+                status: 'failed',
+                message: `Failed to install dependencies (npm/pod): ${e.message}`,
+                suggested_actions: ['Ensure npm and CocoaPods are installed', 'Check network connection'],
+                repo_path: repoPath,
+            };
+        }
     }
     const { project: projOrWs, scheme: defaultScheme } = resolveProjectAndScheme(repoPath);
     const buildScheme = scheme || defaultScheme;

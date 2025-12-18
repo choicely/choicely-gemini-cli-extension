@@ -2,6 +2,18 @@ import path from 'path';
 import fs from 'fs';
 import { CHOICELY_PACKAGE, INSTALL_TIMEOUT_SEC } from '../constants.js';
 import { selectDevice, runAdbCommand, adbDevices } from './adb.js';
+const RN_PACKAGE = 'com.choicely.sdk.rn.debug';
+async function resolveInstalledPackage(device) {
+    // Check default package first
+    let res = await runAdbCommand(device, ["shell", "pm", "list", "packages", CHOICELY_PACKAGE]);
+    if (res.stdout.includes(`package:${CHOICELY_PACKAGE}`))
+        return CHOICELY_PACKAGE;
+    // Check RN package
+    res = await runAdbCommand(device, ["shell", "pm", "list", "packages", RN_PACKAGE]);
+    if (res.stdout.includes(`package:${RN_PACKAGE}`))
+        return RN_PACKAGE;
+    return CHOICELY_PACKAGE; // Default to standard if neither found
+}
 export async function listConnectedDevices() {
     const devices = await adbDevices();
     const result = {
@@ -17,16 +29,25 @@ export async function listConnectedDevices() {
     return result;
 }
 export async function installApp(repoPath, deviceId) {
-    const apkPath = path.join(repoPath, "Android", "Java", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
+    let apkPath = path.join(repoPath, "Android", "Java", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
+    let targetPackage = CHOICELY_PACKAGE;
     if (!fs.existsSync(apkPath)) {
-        throw new Error(`APK not found at ${apkPath}. Please run build_example_app first.`);
+        // Check React Native path
+        const rnApkPath = path.join(repoPath, "android", "app", "build", "outputs", "apk", "debug", "app-debug.apk");
+        if (fs.existsSync(rnApkPath)) {
+            apkPath = rnApkPath;
+            targetPackage = RN_PACKAGE;
+        }
+        else {
+            throw new Error(`APK not found at ${apkPath} or ${rnApkPath}. Please run build_example_app first.`);
+        }
     }
     const device = await selectDevice(deviceId);
     // Uninstall first
     try {
-        const checkResult = await runAdbCommand(device, ["shell", "pm", "list", "packages", CHOICELY_PACKAGE]);
-        if (checkResult.stdout.includes(CHOICELY_PACKAGE)) {
-            await runAdbCommand(device, ["uninstall", CHOICELY_PACKAGE]);
+        const checkResult = await runAdbCommand(device, ["shell", "pm", "list", "packages", targetPackage]);
+        if (checkResult.stdout.includes(targetPackage)) {
+            await runAdbCommand(device, ["uninstall", targetPackage]);
         }
     }
     catch {
@@ -43,7 +64,7 @@ export async function installApp(repoPath, deviceId) {
                     message: `Cannot install app: Insufficient storage on device ${device}.`,
                     suggested_actions: ["Uninstall unused apps"],
                     device_id: device,
-                    package_name: CHOICELY_PACKAGE
+                    package_name: targetPackage
                 };
             }
             if (output.includes("INSTALL_FAILED_UPDATE_INCOMPATIBLE")) {
@@ -52,7 +73,7 @@ export async function installApp(repoPath, deviceId) {
                     message: `Cannot install app: Incompatible with existing version.`,
                     suggested_actions: ["Call uninstall_app first"],
                     device_id: device,
-                    package_name: CHOICELY_PACKAGE
+                    package_name: targetPackage
                 };
             }
             return {
@@ -60,15 +81,15 @@ export async function installApp(repoPath, deviceId) {
                 message: `Installation failed: ${output}`,
                 suggested_actions: ["Check USB debugging", "Try a different device"],
                 device_id: device,
-                package_name: CHOICELY_PACKAGE
+                package_name: targetPackage
             };
         }
         return {
             status: "success",
-            message: `Successfully installed ${CHOICELY_PACKAGE} on device ${device}.`,
+            message: `Successfully installed ${targetPackage} on device ${device}.`,
             suggested_actions: ["Call launch_app to start the app"],
             device_id: device,
-            package_name: CHOICELY_PACKAGE
+            package_name: targetPackage
         };
     }
     catch (error) {
@@ -77,24 +98,25 @@ export async function installApp(repoPath, deviceId) {
 }
 export async function launchApp(deviceId) {
     const device = await selectDevice(deviceId);
+    const packageName = await resolveInstalledPackage(device);
     // Pre-flight check 1: Is installed?
-    const checkResult = await runAdbCommand(device, ["shell", "pm", "list", "packages", CHOICELY_PACKAGE]);
-    if (!checkResult.stdout.includes(CHOICELY_PACKAGE)) {
+    const checkResult = await runAdbCommand(device, ["shell", "pm", "list", "packages", packageName]);
+    if (!checkResult.stdout.includes(packageName)) {
         return {
             status: "failed",
-            message: `Cannot launch ${CHOICELY_PACKAGE} - app is not installed.`,
+            message: `Cannot launch ${packageName} - app is not installed.`,
             suggested_actions: ["Call install_app first"],
             device_id: device
         };
     }
     // Pre-flight check 2: Is running?
-    const pidResult = await runAdbCommand(device, ["shell", "pidof", "-s", CHOICELY_PACKAGE]);
+    const pidResult = await runAdbCommand(device, ["shell", "pidof", "-s", packageName]);
     const isRunning = pidResult.exitCode === 0 && pidResult.stdout.trim().length > 0;
     if (isRunning) {
         const pid = pidResult.stdout.trim();
         return {
             status: "already_done",
-            message: `App ${CHOICELY_PACKAGE} is already running (PID: ${pid}).`,
+            message: `App ${packageName} is already running (PID: ${pid}).`,
             suggested_actions: ["Call force_stop_app to restart it"],
             device_id: device,
             pid
@@ -102,7 +124,7 @@ export async function launchApp(deviceId) {
     }
     // Launch
     const launchResult = await runAdbCommand(device, [
-        "shell", "monkey", "-p", CHOICELY_PACKAGE, "-c", "android.intent.category.LAUNCHER", "1"
+        "shell", "monkey", "-p", packageName, "-c", "android.intent.category.LAUNCHER", "1"
     ]);
     if (launchResult.exitCode !== 0) {
         return {
@@ -114,11 +136,11 @@ export async function launchApp(deviceId) {
     }
     // Verify
     await new Promise(resolve => setTimeout(resolve, 1000));
-    const pidVerify = await runAdbCommand(device, ["shell", "pidof", "-s", CHOICELY_PACKAGE]);
+    const pidVerify = await runAdbCommand(device, ["shell", "pidof", "-s", packageName]);
     const pid = pidVerify.exitCode === 0 ? pidVerify.stdout.trim() : undefined;
     return {
         status: "success",
-        message: `Successfully launched ${CHOICELY_PACKAGE} on device ${device}` + (pid ? ` (PID: ${pid}).` : '.'),
+        message: `Successfully launched ${packageName} on device ${device}` + (pid ? ` (PID: ${pid}).` : '.'),
         suggested_actions: ["Call take_screenshot", "Call get_app_logs"],
         device_id: device,
         pid

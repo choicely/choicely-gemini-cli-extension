@@ -341,12 +341,15 @@ export declare const ScreenshotResultSchema: z.ZodObject<{
 export declare const FetchRepoInputSchema: z.ZodObject<{
     directory: z.ZodOptional<z.ZodString>;
     overwrite: z.ZodDefault<z.ZodBoolean>;
+    template: z.ZodDefault<z.ZodEnum<["native", "react-native"]>>;
 }, "strip", z.ZodTypeAny, {
     overwrite: boolean;
+    template: "native" | "react-native";
     directory?: string | undefined;
 }, {
     directory?: string | undefined;
     overwrite?: boolean | undefined;
+    template?: "native" | "react-native" | undefined;
 }>;
 export declare const BuildAppInputSchema: z.ZodObject<{
     repo_path: z.ZodString;

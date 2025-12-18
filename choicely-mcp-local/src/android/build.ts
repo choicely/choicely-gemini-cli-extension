@@ -9,25 +9,59 @@ import { BuildResult } from '../schemas.js';
  * Write the provided Choicely app key into the demo application code.
  */
 export async function setUpAppKey(appKey: string, repoPath: string): Promise<{ file_path: string }> {
-  const filePath = path.join(
+  // 1. Check for React Native XML config (choicely_config.xml)
+  // This is the preferred method for the React Native template
+  const rnXmlPath = path.join(repoPath, 'android', 'app', 'src', 'main', 'res', 'values', 'choicely_config.xml');
+  
+  if (fs.existsSync(rnXmlPath)) {
+    let content = fs.readFileSync(rnXmlPath, 'utf-8');
+    const pattern = /<string name="choicely_app_key">.*?<\/string>/;
+    
+    if (pattern.test(content)) {
+      const newContent = content.replace(pattern, `<string name="choicely_app_key">${appKey}</string>`);
+      fs.writeFileSync(rnXmlPath, newContent, 'utf-8');
+      return { file_path: rnXmlPath };
+    }
+  }
+
+  // 2. Fallback to Native path (MyApplication.java)
+  let filePath = path.join(
     repoPath,
     'Android', 'Java', 'app', 'src', 'main', 'java',
     'com', 'choicely', 'sdk', 'demo', 'MyApplication.java'
   );
 
   if (!fs.existsSync(filePath)) {
-    throw new Error(`File not found at ${filePath}. Please make sure the path to the repository is correct.`);
+    // Try React Native paths (MainApplication.kt or .java) if XML update didn't happen
+    const rnKtPath = path.join(repoPath, 'android', 'app', 'src', 'main', 'java', 'com', 'choicely', 'sdk', 'demo', 'MainApplication.kt');
+    const rnJavaPath = path.join(repoPath, 'android', 'app', 'src', 'main', 'java', 'com', 'choicely', 'sdk', 'demo', 'MainApplication.java');
+    const rnMyPath = path.join(repoPath, 'android', 'app', 'src', 'main', 'java', 'com', 'choicely', 'sdk', 'rn', 'MyApplication.java');
+    
+    if (fs.existsSync(rnKtPath)) {
+      filePath = rnKtPath;
+    } else if (fs.existsSync(rnJavaPath)) {
+      filePath = rnJavaPath;
+    } else if (fs.existsSync(rnMyPath)) {
+      filePath = rnMyPath;
+    } else {
+      throw new Error(`File not found at ${filePath} (or React Native variants). Please make sure the path to the repository is correct.`);
+    }
   }
 
   let content = fs.readFileSync(filePath, 'utf-8');
 
   // Use a regular expression to find and replace the key
-  const pattern = /ChoicelySDK\.init\(this, "[^"]*"\);/;
-  const newContent = content.replace(pattern, `ChoicelySDK.init(this, "${appKey}");`);
+  // Supports optional semicolon (Kotlin) and strict semicolon (Java)
+  const pattern = /ChoicelySDK\.init\(this, "[^"]*"\);?/;
+  
+  const match = content.match(pattern);
+  const suffix = (match && match[0].endsWith(';')) ? ';' : '';
+  
+  const newContent = content.replace(pattern, `ChoicelySDK.init(this, "${appKey}")${suffix}`);
 
   if (newContent === content) {
     throw new Error(
-      "Could not locate ChoicelySDK.init(...) in MyApplication.java. " +
+      "Could not locate ChoicelySDK.init(...) in application class. " +
       "Confirm the demo source matches the expected template."
     );
   }
@@ -41,19 +75,54 @@ export async function setUpAppKey(appKey: string, repoPath: string): Promise<{ f
  * Build the Android demo application (debug APK).
  */
 export async function buildApp(repoPath: string): Promise<BuildResult> {
-  const buildDir = path.join(repoPath, 'Android', 'Java');
-  const apkRelativePath = path.join('app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
-  const apkFullPath = path.join(buildDir, apkRelativePath);
+  // Detect React Native
+  const packageJson = path.join(repoPath, 'package.json');
+  const isRN = fs.existsSync(packageJson);
 
-  if (!fs.existsSync(buildDir)) {
-    throw new Error(`Build directory not found: ${buildDir}`);
+  if (isRN) {
+    console.error('Detected React Native project. Installing dependencies...');
+    try {
+      await execa('npm', ['install'], { 
+        cwd: repoPath,
+        timeout: 300000, // 5 minutes
+      });
+    } catch (e: any) {
+      return {
+        status: 'failed',
+        message: `Failed to install NPM dependencies: ${e.message}`,
+        suggested_actions: ['Check network connection', 'Ensure node/npm is installed'],
+        repo_path: repoPath,
+      };
+    }
   }
+
+  let buildDir = path.join(repoPath, 'Android', 'Java');
+  let apkRelativePath = path.join('app', 'build', 'outputs', 'apk', 'debug', 'app-debug.apk');
+  
+  if (!fs.existsSync(buildDir)) {
+    // Try React Native standard path
+    const rnAndroidDir = path.join(repoPath, 'android');
+    if (fs.existsSync(rnAndroidDir)) {
+      buildDir = rnAndroidDir;
+    } else {
+       throw new Error(`Build directory not found: ${buildDir} or ${rnAndroidDir}`);
+    }
+  }
+  
+  const apkFullPath = path.join(buildDir, apkRelativePath);
 
   console.error(`Building Android app in ${buildDir}...`);
 
   let env: NodeJS.ProcessEnv;
   try {
     env = getEnvironment(true, true); // require JAVA_HOME and ANDROID_HOME
+    
+    // Ensure platform-tools is in PATH for tasks like adbReverseMetro which call 'adb' directly
+    if (env.ANDROID_HOME) {
+        const platformTools = path.join(env.ANDROID_HOME, 'platform-tools');
+        const pathVar = process.platform === 'win32' ? 'Path' : 'PATH';
+        env[pathVar] = `${platformTools}${path.delimiter}${env[pathVar] || ''}`;
+    }
   } catch (error: any) {
     return {
       status: 'failed',
@@ -83,6 +152,12 @@ export async function buildApp(repoPath: string): Promise<BuildResult> {
     }
 
     const args = ['assembleDebug'];
+
+    // Skip adbReverseMetro for React Native builds to avoid build failures due to ADB connectivity issues.
+    // The user can run 'adb reverse tcp:8081 tcp:8081' manually if needed for Metro.
+    if (isRN) {
+        args.push('-x', 'adbReverseMetro');
+    }
 
     const result = await execa(cmd, args, {
       cwd: buildDir,

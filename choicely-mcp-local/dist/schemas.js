@@ -133,6 +133,7 @@ export const ScreenshotResultSchema = z.object({
 export const FetchRepoInputSchema = z.object({
     directory: z.string().optional().describe("Target directory to clone into; defaults to current working directory"),
     overwrite: z.boolean().default(false).describe("Set true to delete an existing clone before fetching"),
+    template: z.enum(['native', 'react-native']).default('native').describe("Repository template to clone: 'native' (default) or 'react-native'"),
 });
 export const BuildAppInputSchema = z.object({
     repo_path: z.string().describe("Absolute path to the choicely-sdk-demo repository"),

@@ -8,23 +8,24 @@ const GIT_CLONE_TIMEOUT_SEC = 300;
 /**
  * Clone the Choicely SDK demo repository into the target directory.
  */
-export async function fetchExampleAppRepository(directory, overwrite = false) {
+export async function fetchExampleAppRepository(directory, overwrite = false, template = 'native') {
     if (!directory) {
         directory = process.cwd();
     }
     // Ensure we have an absolute path
     directory = path.resolve(directory);
-    console.error(`Fetching Choicely example app repository to: ${directory}`);
+    console.error(`Fetching Choicely example app repository (${template}) to: ${directory}`);
     if (!fs.existsSync(directory)) {
         fs.mkdirSync(directory, { recursive: true });
     }
-    let repoPath = path.join(directory, 'choicely-sdk-demo');
+    const repoName = template === 'react-native' ? 'choicely-sdk-demo-react-native' : 'choicely-sdk-demo';
+    let repoPath = path.join(directory, repoName);
     repoPath = path.resolve(repoPath);
     if (fs.existsSync(repoPath)) {
         if (!overwrite) {
             throw new Error(`'${repoPath}' already exists. Remove it manually or rerun with overwrite=true.`);
         }
-        console.error(`Removing existing choicely-sdk-demo directory at ${repoPath}`);
+        console.error(`Removing existing ${repoName} directory at ${repoPath}`);
         try {
             fs.rmSync(repoPath, { recursive: true, force: true });
             console.error('Successfully removed existing directory');
@@ -34,7 +35,7 @@ export async function fetchExampleAppRepository(directory, overwrite = false) {
             console.warn(`Failed to remove existing directory '${repoPath}': ${e.message}. ` +
                 `Files may be locked by another process. Cloning to a timestamped directory instead.`);
             const timestamp = new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 15);
-            repoPath = path.join(directory, `choicely-sdk-demo_${timestamp}`);
+            repoPath = path.join(directory, `${repoName}_${timestamp}`);
             console.error(`Will clone to: ${repoPath}`);
         }
     }
@@ -43,12 +44,15 @@ export async function fetchExampleAppRepository(directory, overwrite = false) {
     if (!fs.existsSync(parentDir)) {
         fs.mkdirSync(parentDir, { recursive: true });
     }
+    const repoUrl = template === 'react-native'
+        ? 'https://github.com/choicely/choicely-sdk-demo-react-native.git'
+        : 'https://github.com/choicely/choicely-sdk-demo.git';
     console.error(`Cloning repository to: ${repoPath}`);
     try {
         const result = await execa('git', [
             'clone',
             '--quiet',
-            'https://github.com/choicely/choicely-sdk-demo.git',
+            repoUrl,
             repoPath,
         ], {
             timeout: GIT_CLONE_TIMEOUT_SEC * 1000,

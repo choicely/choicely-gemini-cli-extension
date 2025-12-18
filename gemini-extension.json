@@ -7,6 +7,13 @@
       "command": "node",
       "args": ["${extensionPath}${/}run.js"]
     },
+    "choicely-backend-http": {
+      "httpUrl": "http://localhost:8001/mcp",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJkZXZfYWNjZXNzIiwiY3JlYXRvcl9rZXkiOiJZMmh2YVdObGJIa3RaWFV2ZFhObGNuTXZkbTlCWm1WWFVUYzJNVUU0VWs1dk0xRnhhVUkiLCJkZXZfa2V5IjoiWTJodmFXTmxiSGt0WlhVdlluSmhibVJ6TDNsUVFXMHpWV3AyU1VSU1dVeERUVVZ4VjJKWEwyUmxkbDlyWlhsekwwdG1WRXN4Y3pKa2FIRldTRmcwWWxsQ1VUSlciLCJpYXQiOjE3NjE3MzE2MDMsImlzcyI6ImJhY2tlbmQiLCJqdGkiOiI5MmQzMWE2Ni1jMGU5LTQ0ZDQtOWEwMS04MzY4OTcxYmRiMWUiLCJuYmYiOjE3NjE3MzE2MDMsInN1YiI6IlkyaHZhV05sYkhrdFpYVXZZbkpoYm1SekwzbFFRVzB6VldwMlNVUlNXVXhEVFVWeFYySlgiLCJ2ZXJzaW9uIjoxfQ.YLuq2RLKZjMyRage0M2LGlftUK4OEhj_wr33QZLJQlY",
+        "X-Choicely-App-Key": "Y2hvaWNlbHktZXUvYXBwcy9IRDZER0daUG1TN0swNEdwZFFSaQ"
+      }
+    },
     "choicelydocs": {
       "httpUrl": "https://docs.choicely.com/mcp"
     }

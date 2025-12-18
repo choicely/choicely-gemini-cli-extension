@@ -45,7 +45,7 @@ This extension gives the Gemini host a toolbox for running the Choicely Android 
 **Purpose**: Clone the Choicely SDK demo repository into the working directory (or a provided path).
 
 **Parameters**:
-- `directory` (string, optional): Target directory. **AGENT BEHAVIOR NOTE: If the user does not provide a path, ALWAYS default to their current working directory.**
+- `directory` (string, optional): Target directory. **AGENT BEHAVIOR NOTE: You MUST explicitly provide the absolute path to the user's current working directory (e.g., `/Users/username/project/dir`) if the user does not specify a custom path. Do NOT leave this empty or use a relative path, as the tool defaults to an internal extension directory.**
 - `overwrite` (boolean, default false): Remove any existing `choicely-sdk-demo` folder first.
 
 **Returns (structured)**:
@@ -214,6 +214,7 @@ Confirm Xcode, Command Line Tools, and at least one simulator runtime are instal
 Conversation flow and decision rules for the agent (must-follow):
 
 - Ask the user if they have a specific `CHOICELY_APP_KEY` they wish to use. If provided, apply it using `configure_app_key`. If the user mentions it's already set in the environment or declines to provide one, proceed with the existing configuration (which defaults to the environment key or the demo key).
+- **NEVER decode app keys; always use them exactly as provided by the user, even if they appear to be Base64 encoded.**
 - Start by confirming whether to clone the demo app now. If a `directory` is provided, use it; otherwise clone into the workspace folder.
 - After cloning, ask which platform the user wants to work on next (Android, iOS, or both) and follow their answer precisely.
 - For Android requests: offer to build/install/launch in that order, handling missing SDK/device issues with guidance.

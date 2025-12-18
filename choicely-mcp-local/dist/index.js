@@ -46,7 +46,7 @@ function getCurrentAppKey() {
 /**
  * Configure demo app keys for both Android and iOS after cloning.
  */
-async function configureDemoAppKeys(repoPath) {
+async function configureDemoAppKeys(repoPath, template = 'native') {
     const appKey = getCurrentAppKey();
     if (!appKey) {
         return false;
@@ -58,7 +58,8 @@ async function configureDemoAppKeys(repoPath) {
     catch (error) {
         throw toolError(`Failed to configure Android demo with CHOICELY_APP_KEY: ${error.message}`);
     }
-    if (IS_MACOS) {
+    // Skip iOS configuration for React Native template as it doesn't support iOS yet
+    if (IS_MACOS && template !== 'react-native') {
         try {
             setIOSAppKey(appKey, repoPath);
         }
@@ -103,19 +104,20 @@ function toolError(message, code = ErrorCode.InternalError) {
 // ============================================================================
 // Repository Tools
 // ============================================================================
-server.tool('fetch_example_app_repository', 'Fetch the Choicely example app repository to the specified directory. If not provided, clones into the current working directory.', FetchRepoInputSchema.shape, async ({ directory, overwrite }) => {
-    await logInfo({ event: 'repo_clone_start', directory, overwrite });
+server.tool('fetch_example_app_repository', 'Fetch the Choicely example app repository. Supports both Native (default) and React Native templates.', FetchRepoInputSchema.shape, async ({ directory, overwrite, template }) => {
+    await logInfo({ event: 'repo_clone_start', directory, overwrite, template });
     try {
-        const result = await fetchExampleAppRepository(directory, overwrite);
+        const result = await fetchExampleAppRepository(directory, overwrite, template);
         // Configure app keys if CHOICELY_APP_KEY is set
-        const appKeyConfigured = await configureDemoAppKeys(result.repo_path);
-        await logInfo({ event: 'clone_complete', repo_path: result.repo_path });
+        const appKeyConfigured = await configureDemoAppKeys(result.repo_path, template);
+        await logInfo({ event: 'clone_complete', repo_path: result.repo_path, template });
         return {
             content: [
                 {
                     type: 'text',
                     text: JSON.stringify({
                         ...result,
+                        template,
                         app_key_configured: appKeyConfigured,
                         suggested_actions: [
                             'Run build_android_example_app to produce the debug APK',

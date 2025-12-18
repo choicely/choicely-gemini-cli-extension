@@ -7,6 +7,6 @@ interface FetchRepoResult {
 /**
  * Clone the Choicely SDK demo repository into the target directory.
  */
-export declare function fetchExampleAppRepository(directory?: string, overwrite?: boolean): Promise<FetchRepoResult>;
+export declare function fetchExampleAppRepository(directory?: string, overwrite?: boolean, template?: 'native' | 'react-native'): Promise<FetchRepoResult>;
 export {};
 //# sourceMappingURL=git.d.ts.map
